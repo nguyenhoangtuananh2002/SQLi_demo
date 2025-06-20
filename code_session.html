@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Injection - Comprehensive Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* General styles */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Your requested background image styles */
+            background-image: url('https://m.media-amazon.com/images/M/MV5BNWU5Zjk4NDUtMjEzNy00MmEzLThhNGUtOTJiNzRjN2RmNmU5XkEyXkFqcGc@._V1_.jpg');
+            background-size: cover; /* Cover the entire viewport */
+            background-position: center; /* Center the background image */
+            background-repeat: no-repeat; /* Do not repeat the image */
+            background-attachment: fixed; /* Keep image fixed when scrolling */
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh; /* Ensure body takes full height for fixed background to work */
+            display: flex; /* Use flex to stretch the overlay */
+            flex-direction: column; /* Stack content vertically */
+        }
+
+        /* Overlay for better text readability */
+        .overlay {
+            position: absolute; /* Position over the background image */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white overlay */
+            z-index: -1; /* Place it behind the content */
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff; /* Explicitly set container background to opaque white */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            position: relative; /* Ensure container content is above the overlay */
+            z-index: 1; /* Bring container above the overlay */
+        }
+
+        .section {
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        h1 {
+            color: #e74c3c;
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 40px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #e74c3c;
+        }
+
+        h2 {
+            color: #e74c3c;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            text-align: center;
+        }
+
+        h3 {
+            color: #e74c3c;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        p {
+            color: #333;
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Code specific styles */
+        pre {
+            background: #2d2d2d; /* Darker background for code */
+            color: #f8f8f2; /* Light text for code */
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            overflow-x: auto; /* Allow horizontal scrolling for code blocks */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: left;
+            margin: 20px auto;
+            max-width: 80%;
+            font-family: 'Fira Code', 'Consolas', monospace;
+        }
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            color: #66d9ef; /* Cyan for general inline code */
+        }
+        pre code {
+            color: #f8f8f2; /* Ensure code inside pre is light */
+        }
+        pre code .comment {
+            color: #75715e; /* Grey for comments */
+        }
+        pre code .keyword {
+            color: #f92672; /* Pink for keywords */
+        }
+        pre code .string {
+            color: #e6db74; /* Yellow for strings */
+        }
+        pre code .variable {
+            color: #a6e22e; /* Green for variables */
+        }
+
+        /* List styles */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            margin: 30px auto;
+            max-width: 70%;
+        }
+        ul li {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #333;
+            position: relative;
+            padding-left: 25px;
+        }
+        ul li:before {
+            content: "•"; /* Custom bullet point */
+            color: #2ecc71; /* Green bullet */
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+            top: 0;
+        }
+
+        /* Exercise specific styles */
+        .exercise-container {
+            margin-top: 30px;
+            padding: 25px;
+            border: 1px solid #c0392b; /* Darker red border */
+            border-radius: 10px;
+            background-color: #fff3f2; /* Light red background */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            max-width: 70%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .exercise-container h3 {
+            color: #c0392b;
+            margin-top: 0;
+            font-size: 1.8em;
+            text-align: center;
+        }
+        .exercise-container p {
+            text-align: center;
+        }
+        .exercise-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .exercise-container input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #e74c3c;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .exercise-container button {
+            padding: 12px 25px;
+            background-color: #e74c3c; /* Red button */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 10px auto; /* Center buttons */
+        }
+        .exercise-container button:hover {
+            background-color: #c0392b; /* Darker red on hover */
+        }
+        .solution-box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #28a745; /* Green border for solution */
+            background-color: #d4edda; /* Light green background */
+            color: #155724; /* Dark green text */
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+            text-align: left;
+        }
+        .solution-box h4 {
+            color: #155724;
+            margin-top: 0;
+        }
+        .solution-box ul {
+            list-style-type: disc;
+            margin-left: 20px;
+            max-width: 100%; /* Adjust for nested list */
+        }
+        .solution-box ul li {
+            padding-left: 0;
+        }
+        .solution-box ul li:before {
+            content: none;
+        }
+
+        /* Specific highlights */
+        .php-note {
+            background-color: #fdf5e6; /* Light yellow background */
+            border-left: 5px solid #ffcc00; /* Yellow border */
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-style: italic;
+            color: #333;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        /* Data table styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #e74c3c;
+            color: white;
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .data-table tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Output section style */
+        .output-box {
+            background: #f0f8ff; /* Light blue background for output */
+            border: 1px dashed #a0d6ff;
+            padding: 15px;
+            margin: 20px auto;
+            border-radius: 8px;
+            max-width: 80%;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+            color: #004085;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .output-box strong {
+            color: #002752;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 2.5em;
+            }
+            h2 {
+                font-size: 1.8em;
+            }
+            p, ul li, .exercise-container p, .exercise-container label, .exercise-container input, .exercise-container button, .php-note {
+                font-size: 1em;
+            }
+            .exercise-container, pre, .php-note, .data-table, .output-box {
+                max-width: 95%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .data-table thead {
+                display: none; /* Hide table headers on small screens */
+            }
+            .data-table, .data-table tbody, .data-table tr, .data-table td {
+                display: block; /* Make table elements stack */
+            }
+            .data-table tr {
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+            }
+            .data-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for background image text readability -->
+    <div class="overlay"></div>
+
+    <div class="container">
+        <h1>SQL Injection: Understanding and Prevention</h1>
+
+        <div class="section">
+            <h2>What is SQL Injection?</h2>
+            <p>
+                SQL Injection (SQLi) is a code injection technique used to attack data-driven applications, in which malicious SQL statements are inserted into an entry field for execution (e.g., to dump database contents to the attacker).
+            </p>
+            <p>
+                It essentially allows attackers to manipulate queries made to a database, enabling unauthorized data access, modification, or even full system compromise. It's like talking to the database in its own language, but saying things it wasn't supposed to hear or execute.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>How SQLi Works: The Vulnerable Link</h2>
+            <p>
+                SQLi occurs when an application constructs SQL queries by concatenating user-supplied input directly into the query string, without proper sanitization or parameterization.
+            </p>
+            <p>
+                This allows attackers to alter the intended logic of the query by injecting malicious commands as part of their input.
+            </p>
+            <pre><code><span class="comment">// Example of a vulnerable PHP query</span>
+<span class="variable">$category</span> = <span class="keyword">$_GET</span>[<span class="string">'category'</span>]; <span class="comment">// User input directly used!</span>
+<span class="variable">$sql</span> = <span class="string">"SELECT * FROM products WHERE category = '"</span> . <span class="variable">$category</span> . <span class="string">"'"</span>;
+<span class="variable">$result</span> = <span class="keyword">mysqli_query</span>(<span class="variable">$conn</span>, <span class="variable">$sql</span>); <span class="comment">// Executes the concatenated string</span></code></pre>
+            <div class="php-note">
+                Historically, applications written in languages like <strong>PHP</strong> were notorious for this vulnerability. This was largely due to the common practice of directly embedding user input into SQL strings using string concatenation, coupled with a lack of awareness about prepared statements and input validation best practices among many developers.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Login Bypass Example</h2>
+            <p>A classic SQLi attack often targeting authentication forms.</p>
+
+            <h3>Hypothetical `users` Table Data:</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>id</th>
+                        <th>username</th>
+                        <th>password</th>
+                        <th>role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="id">1</td>
+                        <td data-label="username">admin</td>
+                        <td data-label="password">supersecretpass</td>
+                        <td data-label="role">administrator</td>
+                    </tr>
+                    <tr>
+                        <td data-label="id">2</td>
+                        <td data-label="username">john.doe</td>
+                        <td data-label="password">password123</td>
+                        <td data-label="role">user</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Vulnerable Query Structure:</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">{{username_input}}</span>' <span class="keyword">AND</span> password = '<span class="variable">{{password_input}}</span>'</code></pre>
+
+            <p><strong>Malicious Input:</strong></p>
+            <ul>
+                <li>Username: <code>admin'--</code></li>
+                <li>Password: <code>(any value or left blank)</code></li>
+            </ul>
+
+            <p><strong>Resulting Query Executed by Database:</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">admin</span>'<span class="comment">--' AND password = 'anything'</span></code></pre>
+
+            <p><strong>Actual Output / Application Behavior:</strong></p>
+            <div class="output-box">
+                <strong>Output:</strong>
+                <pre><code>id: 1
+username: admin
+password: supersecretpass
+role: administrator</code></pre>
+                <p><strong>Application Behavior:</strong> The attacker successfully logs in as 'admin' without knowing the password, due to the <code>--</code> commenting out the rest of the query, making the password check irrelevant.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Data Exfiltration (UNION-based SQLi)</h2>
+            <p>This technique uses the <code>UNION</code> operator to combine the results of two or more <code>SELECT</code> statements into a single result set, allowing attackers to retrieve data from other tables.</p>
+
+            <h3>Hypothetical Data Tables:</h3>
+            <h4>`products` Table:</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>product_id</th>
+                        <th>product_name</th>
+                        <th>description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="product_id">1</td>
+                        <td data-label="product_name">Laptop X</td>
+                        <td data-label="description">High-performance laptop</td>
+                    </tr>
+                    <tr>
+                        <td data-label="product_id">2</td>
+                        <td data-label="product_name">Smartphone Y</td>
+                        <td data-label="description">Latest mobile device</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4>`users` Table:</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>user_id</th>
+                        <th>username</th>
+                        <th>password</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="user_id">1</td>
+                        <td data-label="username">alice</td>
+                        <td data-label="password">pass_alice</td>
+                    </tr>
+                    <tr>
+                        <td data-label="user_id">2</td>
+                        <td data-label="username">bob</td>
+                        <td data-label="password">pass_bob</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Vulnerable Query Structure (e.g., for product details by ID):</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
+
+            <p><strong>Malicious Input for `product_id_input`:</strong></p>
+            <ul>
+                <li><code>-1 UNION SELECT username, password FROM users--</code></li>
+            </ul>
+            <p class="comment">(<code>-1</code> is used to ensure no legitimate product is returned, focusing on the UNION part. Note: The number of columns and their types must match. Here, `username` maps to `product_name` and `password` to `description`.)</p>
+
+            <p><strong>Resulting Query Executed by Database:</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">-1</span> <span class="keyword">UNION</span> <span class="keyword">SELECT</span> username, password <span class="keyword">FROM</span> users<span class="comment">--</span></code></pre>
+
+            <p><strong>Actual Output / Application Behavior:</strong></p>
+            <div class="output-box">
+                <strong>Output (displayed to user if the application just prints query results):</strong>
+                <pre><code>product_name | description
+----------------------------
+alice        | pass_alice
+bob          | pass_bob</code></pre>
+                <p><strong>Application Behavior:</strong> The application, which normally shows product details, now displays usernames and passwords from the `users` table instead. This is a direct data leak.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Error-based SQLi</h2>
+            <p>
+                Forces the database to throw an error that contains sensitive information, such as database version, table names, or column names. Attackers provoke these errors by injecting malformed SQL queries.
+            </p>
+
+            <h3>Hypothetical `products` Table (same as above):</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>product_id</th>
+                        <th>product_name</th>
+                        <th>description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="product_id">1</td>
+                        <td data-label="product_name">Laptop X</td>
+                        <td data-label="description">High-performance laptop</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Vulnerable Query Structure (e.g., for product details by ID):</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
+
+            <p><strong>Malicious Input for `product_id_input` (MySQL Example):</strong></p>
+            <ul>
+                <li><code>1 AND (SELECT 1 FROM (SELECT COUNT(*), CONCAT(VERSION(), FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.TABLES GROUP BY x)a)--</code></li>
+            </ul>
+            <p class="comment">(This payload tries to create a duplicate key error using `FLOOR(RAND(0)*2)` and concatenates the `VERSION()` information to trigger the error message with the sensitive data.)</p>
+
+            <p><strong>Resulting Query Executed by Database:</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = 1 <span class="keyword">AND</span> (<span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> (<span class="keyword">SELECT</span> <span class="keyword">COUNT</span>(*), <span class="keyword">CONCAT</span>(<span class="keyword">VERSION</span>(), <span class="keyword">FLOOR</span>(<span class="keyword">RAND</span>(0)*2))x <span class="keyword">FROM</span> <span class="keyword">INFORMATION_SCHEMA.TABLES</span> <span class="keyword">GROUP</span> <span class="keyword">BY</span> x)a)<span class="comment">--</span></code></pre>
+
+            <p><strong>Actual Output / Application Behavior:</strong></p>
+            <div class="output-box">
+                <strong>Output (Database Error Message displayed to user):</strong>
+                <pre><code>SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '5.7.23-log1' for key 'group_key'</code></pre>
+                <p><strong>Application Behavior:</strong> The application, instead of showing product details, displays a database error message that leaks the database version (`5.7.23-log`). Attackers can craft similar payloads to extract other information (e.g., table names, column names).</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Blind SQL Injection (Boolean-based)</h2>
+            <p>
+                Unlike in-band SQLi, Blind SQLi doesn't return data directly. Instead, attackers infer data by observing subtle differences in the application's behavior (e.g., page content changes, redirects) based on true/false conditions injected into the query.
+            </p>
+
+            <h3>Hypothetical `users` Table Data:</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>id</th>
+                        <th>username</th>
+                        <th>password</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="id">1</td>
+                        <td data-label="username">admin</td>
+                        <td data-label="password">secret123</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Vulnerable Query Structure (e.g., checking if user exists):</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
+
+            <p><strong>Malicious Input for `id_input` (Trying to guess password for `id=1`):</strong></p>
+            <ul>
+                <li>Attempt 1 (Guessing 's'): <code>1 AND SUBSTRING(password, 1, 1) = 's'--</code></li>
+                <li>Attempt 2 (Guessing 'x'): <code>1 AND SUBSTRING(password, 1, 1) = 'x'--</code></li>
+            </ul>
+
+            <p><strong>Resulting Queries Executed by Database:</strong></p>
+            <pre><code class="language-sql">-- Attempt 1
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 's'<span class="comment">--</span>
+
+-- Attempt 2
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x'<span class="comment">--</span></code></pre>
+
+            <p><strong>Actual Output / Application Behavior:</strong></p>
+            <div class="output-box">
+                <strong>Application Behavior for Attempt 1 (`password` starts with 's'):</strong>
+                <p>The page loads normally, perhaps showing a "User found" message or the default content for an existing user.</p>
+                <strong>Application Behavior for Attempt 2 (`password` does NOT start with 'x'):</strong>
+                <p>The page shows an "Invalid ID" or "User not found" message, or perhaps a blank page/redirects to an error page.</p>
+                <p><strong>Explanation:</strong> By observing these different behaviors, an attacker can confirm that the first character of the password is 's'. They repeat this process for each character and position to reconstruct the entire password.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Blind SQL Injection (Time-based)</h2>
+            <p>
+                An advanced form of Blind SQLi, used when no other error or content difference is observable. Attackers infer data by causing a measurable time delay in the database response if a specific condition is true.
+            </p>
+
+            <h3>Hypothetical `users` Table Data (same as above):</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>id</th>
+                        <th>username</th>
+                        <th>password</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="id">1</td>
+                        <td data-label="username">admin</td>
+                        <td data-label="password">secret123</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Vulnerable Query Structure (e.g., checking if user exists):</strong></p>
+            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
+
+            <p><strong>Malicious Input for `id_input` (Trying to guess password for `id=1`):</strong></p>
+            <ul>
+                <li>Attempt 1 (Guessing 's'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 's', SLEEP(5), 0)--</code></li>
+                <li>Attempt 2 (Guessing 'x'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 'x', SLEEP(5), 0)--</code></li>
+            </ul>
+
+            <p><strong>Resulting Queries Executed by Database:</strong></p>
+            <pre><code class="language-sql">-- Attempt 1
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 's', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span>
+
+-- Attempt 2
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span></code></pre>
+
+            <p><strong>Actual Output / Application Behavior:</strong></p>
+            <div class="output-box">
+                <strong>Application Behavior for Attempt 1 (`password` starts with 's'):</strong>
+                <p>The page response takes approximately 5 seconds longer than usual.</p>
+                <strong>Application Behavior for Attempt 2 (`password` does NOT start with 'x'):</strong>
+                <p>The page responds immediately (or with minimal delay).</p>
+                <p><strong>Explanation:</strong> The attacker can precisely measure the response time. A 5-second delay indicates the condition was true. This confirms 's' as the first character. This process is repeated to extract the entire password and other sensitive data, albeit slowly.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Exercise: Fix Product Search</h2>
+            <p>The `search_term` is directly concatenated, making the query vulnerable to SQL injection. How would you modify this Python code to make it secure?</p>
+            <pre><code><span class="comment"># Vulnerable Python code snippet</span>
+<span class="variable">search_term</span> = <span class="string">"user_input"</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE '%"</span> + <span class="variable">search_term</span> + <span class="string">"%'"</span>
+
+<span class="comment"># Fixed (Python DB API example using parameterized queries):</span>
+<span class="variable">param_value</span> = <span class="string">'%'</span> + <span class="variable">search_term</span> + <span class="string">'%'</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE ?"</span>
+<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">param_value</span>,))</code></pre>
+            <p><strong>Solution:</strong> The fixed code uses a parameterized query. This separates the SQL code from the user-provided data, ensuring the database treats `param_value` as a literal string, not executable code. This is the primary and most effective defense against SQL injection.</p>
+        </div>
+
+        <div class="section">
+            <h2>Exercise: Fix Integer ID Query</h2>
+            <p>Even integer inputs can be exploited if not handled correctly. The `article_id` is directly used here. How can you prevent SQL injection?</p>
+            <pre><code><span class="comment"># Vulnerable Python code snippet</span>
+<span class="variable">article_id</span> = <span class="string">"user_input"</span> <span class="comment">// Could be "1 OR 1=1"</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = "</span> + <span class="variable">article_id</span>
+
+<span class="comment"># Fixed (Python DB API example using parameterized queries):</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = ?"</span>
+<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">article_id</span>,))</code></pre>
+            <p><strong>Solution:</strong> By using a parameterized query, the database driver ensures that `article_id` is treated as a single integer value, preventing any injected SQL from being executed. Input validation (e.g., casting to `int`) to ensure `article_id` is truly an integer before passing it to the query is also a crucial layer of defense, but parameterization is the ultimate protection from injection.</p>
+        </div>
+
+        <div class="section">
+            <h2>Interactive Exercise: Login Bypass</h2>
+            <div class="exercise-container">
+                <h3>Simulate a Login Attempt</h3>
+                <p>
+                    Try to log in as 'admin' without knowing the password. Enter your 'Username' and 'Password' (or just a malicious username).
+                    This is a client-side simulation and does not interact with a real backend.
+                </p>
+                <label for="ex_username">Username:</label>
+                <input
+                    type="text"
+                    id="ex_username"
+                    placeholder="e.g., admin"
+                    autocomplete="off"
+                />
+                <label for="ex_password">Password:</label>
+                <input
+                    type="text"
+                    id="ex_password"
+                    placeholder="e.g., password (optional for bypass)"
+                    autocomplete="off"
+                />
+                <button onclick="simulateLogin()">Simulate Login</button>
+                <div id="loginResult" class="solution-box"></div>
+                <button
+                    style="margin-top: 10px; background-color: #2ecc71"
+                    onclick="showLoginSolution()"
+                >
+                    Show Solution
+                </button>
+                <div id="loginSolution" class="solution-box">
+                    <h4>Common Bypass Solutions:</h4>
+                    <ul>
+                        <li>
+                            <strong>Username:</strong> <code>admin'--</code>
+                            <span class="comment">(Comments out rest of query)</span>
+                        </li>
+                        <li>
+                            <strong>Username:</strong> <code>admin' OR '1'='1</code>
+                            <span class="comment">(Always true condition)</span>
+                        </li>
+                        <li>
+                            <strong>Username:</strong> <code>' OR '1'='1--</code>
+                            <span class="comment">(Bypasses both username and password)</span>
+                        </li>
+                    </ul>
+                    <p>
+                        These inputs will manipulate the SQL query to evaluate to
+                        true, bypassing the intended authentication logic.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Best Practices: Your Shield Against SQLi</h2>
+            <ul>
+                <li>
+                    <strong>Use Parameterized Queries/Prepared Statements:</strong> The gold standard. They separate SQL code from user-supplied data, ensuring inputs are treated as literal values, not executable commands.
+                </li>
+                <li>
+                    <strong>Validate Input Types and Formats:</strong> Implement strict allow-lists (whitelisting) for all inputs. Reject anything that doesn't conform to expected patterns (e.g., only digits for an ID, specific characters for a name).
+                </li>
+                <li>
+                    <strong>Utilize ORMs (Object-Relational Mappers):</strong> Frameworks like SQLAlchemy (Python), Hibernate (Java), and Entity Framework (.NET) provide an abstraction layer over raw SQL, often incorporating parameterized queries by default, reducing the risk of manual errors.
+                </li>
+                <li>
+                    <strong>Adhere to the Principle of Least Privilege:</strong> Grant database users only the minimum necessary permissions required for their specific tasks. For example, a web application user might only need read access to certain tables, not DDL (Data Definition Language) or DML (Data Manipulation Language) privileges on sensitive tables.
+                </li>
+                <li>
+                    <strong>Use Stored Procedures Safely:</strong> If using stored procedures, ensure they are designed and implemented securely, meaning they also use parameterized inputs internally and do not concatenate user input directly.
+                </li>
+                <li>
+                    <strong>Escape User-Supplied Input (Legacy/Last Resort):</strong> Manually escaping special characters is an older method and is highly error-prone. It should only be used as a last resort in legacy systems where parameterization is not possible. Always prefer parameterized queries.
+                </li>
+                <li>
+                    <strong>Implement a Web Application Firewall (WAF):</strong> WAFs can detect and block common SQLi attack patterns at the network edge, providing an additional layer of defense, especially against known attack signatures.
+                </li>
+                <li>
+                    <strong>Perform Regular Security Audits & Testing:</strong> Periodically conduct security assessments, penetration tests, and code reviews to identify and remediate potential SQLi vulnerabilities before attackers can exploit them.
+                </li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Final Advice: Stay Secure!</h2>
+            <p>
+                <strong>Always treat user input as untrusted, regardless of its source (even authenticated users or internal systems).</strong> Never assume input is safe.
+            </p>
+            <p>
+                Embrace modern development practices like parameterization and ORMs to build robust and secure applications from the ground up.
+            </p>
+            <p>
+                Regularly scan and test your applications for vulnerabilities and keep your frameworks and libraries updated to stay ahead of attackers.
+            </p>
+            <p>Security is an ongoing process, not a one-time fix. A proactive approach is key to defending against SQL Injection and other web vulnerabilities.</p>
+        </div>
+    </div>
+
+    <script>
+        function simulateLogin() {
+            const usernameInput = document.getElementById('ex_username').value;
+            const passwordInput = document.getElementById('ex_password').value;
+            const loginResult = document.getElementById('loginResult');
+
+            // Simulate a vulnerable SQL query string concatenation
+            let simulatedQuery = `SELECT * FROM users WHERE username = '${usernameInput}' AND password = '${passwordInput}'`;
+
+            let resultText = '';
+            let isBypassAttempt = false;
+
+            // Simple check for common SQLi bypass patterns
+            // This is a simplified check for demonstration purposes.
+            // Real-world SQLi detection is far more complex.
+            if (
+                usernameInput.includes("'--") || usernameInput.includes("' OR '1'='1") || usernameInput.includes("' OR 1=1") ||
+                usernameInput.includes("';--") || usernameInput.includes("') OR ('1'='1")
+            ) {
+                isBypassAttempt = true;
+            }
+            if (
+                passwordInput.includes("'--") || passwordInput.includes("' OR '1'='1") || passwordInput.includes("' OR 1=1") ||
+                passwordInput.includes("';--") || passwordInput.includes("') OR ('1'='1")
+            ) {
+                isBypassAttempt = true;
+            }
+
+            if (isBypassAttempt) {
+                loginResult.style.backgroundColor = '#d4edda'; // Green for success/detection
+                loginResult.style.borderColor = '#28a745';
+                loginResult.style.color = '#155724';
+                resultText = "<p><strong>Potential SQL Injection Detected!</strong></p>";
+                resultText += "<p>Simulated Query:</p>";
+                resultText += `<pre><code class="language-sql">${simulatedQuery}</code></pre>`;
+                resultText += "<p>If this were a real vulnerable system, you might have bypassed login!</p>";
+            } else {
+                loginResult.style.backgroundColor = '#fff3f2'; // Light red for no immediate detection
+                loginResult.style.borderColor = '#e74c3c';
+                loginResult.style.color = '#c0392b';
+                resultText = "<p>Simulated Query:</p>";
+                resultText += `<pre><code class="language-sql">${simulatedQuery}</code></code` + `></pre>`;
+                resultText += "<p>No immediate bypass detected with this input. Keep trying common SQLi payloads!</p>";
+            }
+            
+            loginResult.innerHTML = resultText;
+            loginResult.style.display = 'block';
+        }
+
+        function showLoginSolution() {
+            const solutionBox = document.getElementById('loginSolution');
+            // Toggle visibility
+            if (solutionBox.style.display === 'block') {
+                solutionBox.style.display = 'none';
+            } else {
+                solutionBox.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
