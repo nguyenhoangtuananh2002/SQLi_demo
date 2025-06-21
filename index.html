@@ -344,431 +344,430 @@
     <div class="overlay"></div>
 
     <div class="container">
-        <h1>SQL Injection: Understanding and Prevention</h1>
+    <h1>SQL Injection: Hiểu và Phòng Chống</h1>
 
-        <div class="section">
-            <h2>What is SQL Injection?</h2>
-            <p>
-                SQL Injection (SQLi) is a code injection technique used to attack data-driven applications, in which malicious SQL statements are inserted into an entry field for execution (e.g., to dump database contents to the attacker).
-            </p>
-            <p>
-                It essentially allows attackers to manipulate queries made to a database, enabling unauthorized data access, modification, or even full system compromise. It's like talking to the database in its own language, but saying things it wasn't supposed to hear or execute.
-            </p>
-        </div>
+    <div class="section">
+        <h2>SQL Injection là gì?</h2>
+        <p>
+            SQL Injection (SQLi) là một kỹ thuật tấn công chèn mã vào ứng dụng, nơi kẻ xấu chèn các câu lệnh SQL độc hại vào ô nhập liệu để thực thi (ví dụ: lấy toàn bộ dữ liệu từ database).
+        </p>
+        <p>
+            Nói đơn giản, SQLi cho phép kẻ tấn công điều khiển các câu lệnh gửi đến database. Điều này giúp họ truy cập, sửa đổi dữ liệu trái phép, hoặc thậm chí chiếm quyền kiểm soát toàn bộ hệ thống. Giống như việc bạn đang "nói chuyện" với database bằng ngôn ngữ của nó, nhưng lại nói những điều mà nó không được phép nghe hay làm theo.
+        </p>
+    </div>
 
-        <div class="section">
-            <h2>How SQLi Works: The Vulnerable Link</h2>
-            <p>
-                SQLi occurs when an application constructs SQL queries by concatenating user-supplied input directly into the query string, without proper sanitization or parameterization.
-            </p>
-            <p>
-                This allows attackers to alter the intended logic of the query by injecting malicious commands as part of their input.
-            </p>
-            <pre><code><span class="comment">// Example of a vulnerable PHP query</span>
-<span class="variable">$category</span> = <span class="keyword">$_GET</span>[<span class="string">'category'</span>]; <span class="comment">// User input directly used!</span>
+    <div class="section">
+        <h2>SQLi hoạt động thế nào: Lỗ hổng dễ bị tấn công</h2>
+        <p>
+            SQLi xảy ra khi một ứng dụng tạo câu lệnh SQL bằng cách ghép trực tiếp dữ liệu do người dùng nhập vào chuỗi truy vấn, mà không làm sạch (sanitization) hoặc dùng tham số hóa (parameterization) đúng cách.
+        </p>
+        <p>
+            Điều này cho phép kẻ tấn công thay đổi ý nghĩa của câu lệnh gốc bằng cách chèn các lệnh độc hại vào phần nhập liệu của họ.
+        </p>
+        <pre><code><span class="comment">// Ví dụ về một câu truy vấn PHP dễ bị tấn công</span>
+<span class="variable">$category</span> = <span class="keyword">$_GET</span>[<span class="string">'category'</span>]; <span class="comment">// Dữ liệu người dùng nhập trực tiếp!</span>
 <span class="variable">$sql</span> = <span class="string">"SELECT * FROM products WHERE category = '"</span> . <span class="variable">$category</span> . <span class="string">"'"</span>;
-<span class="variable">$result</span> = <span class="keyword">mysqli_query</span>(<span class="variable">$conn</span>, <span class="variable">$sql</span>); <span class="comment">// Executes the concatenated string</span></code></pre>
-            <div class="php-note">
-                Historically, applications written in languages like <strong>PHP</strong> were notorious for this vulnerability. This was largely due to the common practice of directly embedding user input into SQL strings using string concatenation, coupled with a lack of awareness about prepared statements and input validation best practices among many developers.
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Login Bypass Example</h2>
-            <p>A classic SQLi attack often targeting authentication forms.</p>
-
-            <h3>Hypothetical `users` Table Data:</h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>username</th>
-                        <th>password</th>
-                        <th>role</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="id">1</td>
-                        <td data-label="username">admin</td>
-                        <td data-label="password">supersecretpass</td>
-                        <td data-label="role">administrator</td>
-                    </tr>
-                    <tr>
-                        <td data-label="id">2</td>
-                        <td data-label="username">john.doe</td>
-                        <td data-label="password">password123</td>
-                        <td data-label="role">user</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Vulnerable Query Structure:</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">{{username_input}}</span>' <span class="keyword">AND</span> password = '<span class="variable">{{password_input}}</span>'</code></pre>
-
-            <p><strong>Malicious Input:</strong></p>
-            <ul>
-                <li>Username: <code>admin'--</code></li>
-                <li>Password: <code>(any value or left blank)</code></li>
-            </ul>
-
-            <p><strong>Resulting Query Executed by Database:</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">admin</span>'<span class="comment">--' AND password = 'anything'</span></code></pre>
-
-            <p><strong>Actual Output / Application Behavior:</strong></p>
-            <div class="output-box">
-                <strong>Output:</strong>
-                <pre><code>id: 1
-username: admin
-password: supersecretpass
-role: administrator</code></pre>
-                <p><strong>Application Behavior:</strong> The attacker successfully logs in as 'admin' without knowing the password, due to the <code>--</code> commenting out the rest of the query, making the password check irrelevant.</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Data Exfiltration (UNION-based SQLi)</h2>
-            <p>This technique uses the <code>UNION</code> operator to combine the results of two or more <code>SELECT</code> statements into a single result set, allowing attackers to retrieve data from other tables.</p>
-
-            <h3>Hypothetical Data Tables:</h3>
-            <h4>`products` Table:</h4>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>product_id</th>
-                        <th>product_name</th>
-                        <th>description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="product_id">1</td>
-                        <td data-label="product_name">Laptop X</td>
-                        <td data-label="description">High-performance laptop</td>
-                    </tr>
-                    <tr>
-                        <td data-label="product_id">2</td>
-                        <td data-label="product_name">Smartphone Y</td>
-                        <td data-label="description">Latest mobile device</td>
-                    </tr>
-                </tbody>
-            </table>
-            <h4>`users` Table:</h4>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>user_id</th>
-                        <th>username</th>
-                        <th>password</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="user_id">1</td>
-                        <td data-label="username">alice</td>
-                        <td data-label="password">pass_alice</td>
-                    </tr>
-                    <tr>
-                        <td data-label="user_id">2</td>
-                        <td data-label="username">bob</td>
-                        <td data-label="password">pass_bob</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Vulnerable Query Structure (e.g., for product details by ID):</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
-
-            <p><strong>Malicious Input for `product_id_input`:</strong></p>
-            <ul>
-                <li><code>-1 UNION SELECT username, password FROM users--</code></li>
-            </ul>
-            <p class="comment">(<code>-1</code> is used to ensure no legitimate product is returned, focusing on the UNION part. Note: The number of columns and their types must match. Here, `username` maps to `product_name` and `password` to `description`.)</p>
-
-            <p><strong>Resulting Query Executed by Database:</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">-1</span> <span class="keyword">UNION</span> <span class="keyword">SELECT</span> username, password <span class="keyword">FROM</span> users<span class="comment">--</span></code></pre>
-
-            <p><strong>Actual Output / Application Behavior:</strong></p>
-            <div class="output-box">
-                <strong>Output (displayed to user if the application just prints query results):</strong>
-                <pre><code>product_name | description
-----------------------------
-alice        | pass_alice
-bob          | pass_bob</code></pre>
-                <p><strong>Application Behavior:</strong> The application, which normally shows product details, now displays usernames and passwords from the `users` table instead. This is a direct data leak.</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Error-based SQLi</h2>
-            <p>
-                Forces the database to throw an error that contains sensitive information, such as database version, table names, or column names. Attackers provoke these errors by injecting malformed SQL queries.
-            </p>
-
-            <h3>Hypothetical `products` Table (same as above):</h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>product_id</th>
-                        <th>product_name</th>
-                        <th>description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="product_id">1</td>
-                        <td data-label="product_name">Laptop X</td>
-                        <td data-label="description">High-performance laptop</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Vulnerable Query Structure (e.g., for product details by ID):</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
-
-            <p><strong>Malicious Input for `product_id_input` (MySQL Example):</strong></p>
-            <ul>
-                <li><code>1 AND (SELECT 1 FROM (SELECT COUNT(*), CONCAT(VERSION(), FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.TABLES GROUP BY x)a)--</code></li>
-            </ul>
-            <p class="comment">(This payload tries to create a duplicate key error using `FLOOR(RAND(0)*2)` and concatenates the `VERSION()` information to trigger the error message with the sensitive data.)</p>
-
-            <p><strong>Resulting Query Executed by Database:</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = 1 <span class="keyword">AND</span> (<span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> (<span class="keyword">SELECT</span> <span class="keyword">COUNT</span>(*), <span class="keyword">CONCAT</span>(<span class="keyword">VERSION</span>(), <span class="keyword">FLOOR</span>(<span class="keyword">RAND</span>(0)*2))x <span class="keyword">FROM</span> <span class="keyword">INFORMATION_SCHEMA.TABLES</span> <span class="keyword">GROUP</span> <span class="keyword">BY</span> x)a)<span class="comment">--</span></code></pre>
-
-            <p><strong>Actual Output / Application Behavior:</strong></p>
-            <div class="output-box">
-                <strong>Output (Database Error Message displayed to user):</strong>
-                <pre><code>SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '5.7.23-log1' for key 'group_key'</code></pre>
-                <p><strong>Application Behavior:</strong> The application, instead of showing product details, displays a database error message that leaks the database version (`5.7.23-log`). Attackers can craft similar payloads to extract other information (e.g., table names, column names).</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Blind SQL Injection (Boolean-based)</h2>
-            <p>
-                Unlike in-band SQLi, Blind SQLi doesn't return data directly. Instead, attackers infer data by observing subtle differences in the application's behavior (e.g., page content changes, redirects) based on true/false conditions injected into the query.
-            </p>
-
-            <h3>Hypothetical `users` Table Data:</h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>username</th>
-                        <th>password</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="id">1</td>
-                        <td data-label="username">admin</td>
-                        <td data-label="password">secret123</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Vulnerable Query Structure (e.g., checking if user exists):</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
-
-            <p><strong>Malicious Input for `id_input` (Trying to guess password for `id=1`):</strong></p>
-            <ul>
-                <li>Attempt 1 (Guessing 's'): <code>1 AND SUBSTRING(password, 1, 1) = 's'--</code></li>
-                <li>Attempt 2 (Guessing 'x'): <code>1 AND SUBSTRING(password, 1, 1) = 'x'--</code></li>
-            </ul>
-
-            <p><strong>Resulting Queries Executed by Database:</strong></p>
-            <pre><code class="language-sql">-- Attempt 1
-<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 's'<span class="comment">--</span>
-
--- Attempt 2
-<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x'<span class="comment">--</span></code></pre>
-
-            <p><strong>Actual Output / Application Behavior:</strong></p>
-            <div class="output-box">
-                <strong>Application Behavior for Attempt 1 (`password` starts with 's'):</strong>
-                <p>The page loads normally, perhaps showing a "User found" message or the default content for an existing user.</p>
-                <strong>Application Behavior for Attempt 2 (`password` does NOT start with 'x'):</strong>
-                <p>The page shows an "Invalid ID" or "User not found" message, or perhaps a blank page/redirects to an error page.</p>
-                <p><strong>Explanation:</strong> By observing these different behaviors, an attacker can confirm that the first character of the password is 's'. They repeat this process for each character and position to reconstruct the entire password.</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Blind SQL Injection (Time-based)</h2>
-            <p>
-                An advanced form of Blind SQLi, used when no other error or content difference is observable. Attackers infer data by causing a measurable time delay in the database response if a specific condition is true.
-            </p>
-
-            <h3>Hypothetical `users` Table Data (same as above):</h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>username</th>
-                        <th>password</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="id">1</td>
-                        <td data-label="username">admin</td>
-                        <td data-label="password">secret123</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p><strong>Vulnerable Query Structure (e.g., checking if user exists):</strong></p>
-            <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
-
-            <p><strong>Malicious Input for `id_input` (Trying to guess password for `id=1`):</strong></p>
-            <ul>
-                <li>Attempt 1 (Guessing 's'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 's', SLEEP(5), 0)--</code></li>
-                <li>Attempt 2 (Guessing 'x'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 'x', SLEEP(5), 0)--</code></li>
-            </ul>
-
-            <p><strong>Resulting Queries Executed by Database:</strong></p>
-            <pre><code class="language-sql">-- Attempt 1
-<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 's', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span>
-
--- Attempt 2
-<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span></code></pre>
-
-            <p><strong>Actual Output / Application Behavior:</strong></p>
-            <div class="output-box">
-                <strong>Application Behavior for Attempt 1 (`password` starts with 's'):</strong>
-                <p>The page response takes approximately 5 seconds longer than usual.</p>
-                <strong>Application Behavior for Attempt 2 (`password` does NOT start with 'x'):</strong>
-                <p>The page responds immediately (or with minimal delay).</p>
-                <p><strong>Explanation:</strong> The attacker can precisely measure the response time. A 5-second delay indicates the condition was true. This confirms 's' as the first character. This process is repeated to extract the entire password and other sensitive data, albeit slowly.</p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Exercise: Fix Product Search</h2>
-            <p>The `search_term` is directly concatenated, making the query vulnerable to SQL injection. How would you modify this Python code to make it secure?</p>
-            <pre><code><span class="comment"># Vulnerable Python code snippet</span>
-<span class="variable">search_term</span> = <span class="string">"user_input"</span>
-<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE '%"</span> + <span class="variable">search_term</span> + <span class="string">"%'"</span>
-
-<span class="comment"># Fixed (Python DB API example using parameterized queries):</span>
-<span class="variable">param_value</span> = <span class="string">'%'</span> + <span class="variable">search_term</span> + <span class="string">'%'</span>
-<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE ?"</span>
-<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">param_value</span>,))</code></pre>
-            <p><strong>Solution:</strong> The fixed code uses a parameterized query. This separates the SQL code from the user-provided data, ensuring the database treats `param_value` as a literal string, not executable code. This is the primary and most effective defense against SQL injection.</p>
-        </div>
-
-        <div class="section">
-            <h2>Exercise: Fix Integer ID Query</h2>
-            <p>Even integer inputs can be exploited if not handled correctly. The `article_id` is directly used here. How can you prevent SQL injection?</p>
-            <pre><code><span class="comment"># Vulnerable Python code snippet</span>
-<span class="variable">article_id</span> = <span class="string">"user_input"</span> <span class="comment">// Could be "1 OR 1=1"</span>
-<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = "</span> + <span class="variable">article_id</span>
-
-<span class="comment"># Fixed (Python DB API example using parameterized queries):</span>
-<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = ?"</span>
-<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">article_id</span>,))</code></pre>
-            <p><strong>Solution:</strong> By using a parameterized query, the database driver ensures that `article_id` is treated as a single integer value, preventing any injected SQL from being executed. Input validation (e.g., casting to `int`) to ensure `article_id` is truly an integer before passing it to the query is also a crucial layer of defense, but parameterization is the ultimate protection from injection.</p>
-        </div>
-
-        <div class="section">
-            <h2>Interactive Exercise: Login Bypass</h2>
-            <div class="exercise-container">
-                <h3>Simulate a Login Attempt</h3>
-                <p>
-                    Try to log in as 'admin' without knowing the password. Enter your 'Username' and 'Password' (or just a malicious username).
-                    This is a client-side simulation and does not interact with a real backend.
-                </p>
-                <label for="ex_username">Username:</label>
-                <input
-                    type="text"
-                    id="ex_username"
-                    placeholder="e.g., admin"
-                    autocomplete="off"
-                />
-                <label for="ex_password">Password:</label>
-                <input
-                    type="text"
-                    id="ex_password"
-                    placeholder="e.g., password (optional for bypass)"
-                    autocomplete="off"
-                />
-                <button onclick="simulateLogin()">Simulate Login</button>
-                <div id="loginResult" class="solution-box"></div>
-                <button
-                    style="margin-top: 10px; background-color: #2ecc71"
-                    onclick="showLoginSolution()"
-                >
-                    Show Solution
-                </button>
-                <div id="loginSolution" class="solution-box">
-                    <h4>Common Bypass Solutions:</h4>
-                    <ul>
-                        <li>
-                            <strong>Username:</strong> <code>admin'--</code>
-                            <span class="comment">(Comments out rest of query)</span>
-                        </li>
-                        <li>
-                            <strong>Username:</strong> <code>admin' OR '1'='1</code>
-                            <span class="comment">(Always true condition)</span>
-                        </li>
-                        <li>
-                            <strong>Username:</strong> <code>' OR '1'='1--</code>
-                            <span class="comment">(Bypasses both username and password)</span>
-                        </li>
-                    </ul>
-                    <p>
-                        These inputs will manipulate the SQL query to evaluate to
-                        true, bypassing the intended authentication logic.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Best Practices: Your Shield Against SQLi</h2>
-            <ul>
-                <li>
-                    <strong>Use Parameterized Queries/Prepared Statements:</strong> The gold standard. They separate SQL code from user-supplied data, ensuring inputs are treated as literal values, not executable commands.
-                </li>
-                <li>
-                    <strong>Validate Input Types and Formats:</strong> Implement strict allow-lists (whitelisting) for all inputs. Reject anything that doesn't conform to expected patterns (e.g., only digits for an ID, specific characters for a name).
-                </li>
-                <li>
-                    <strong>Utilize ORMs (Object-Relational Mappers):</strong> Frameworks like SQLAlchemy (Python), Hibernate (Java), and Entity Framework (.NET) provide an abstraction layer over raw SQL, often incorporating parameterized queries by default, reducing the risk of manual errors.
-                </li>
-                <li>
-                    <strong>Adhere to the Principle of Least Privilege:</strong> Grant database users only the minimum necessary permissions required for their specific tasks. For example, a web application user might only need read access to certain tables, not DDL (Data Definition Language) or DML (Data Manipulation Language) privileges on sensitive tables.
-                </li>
-                <li>
-                    <strong>Use Stored Procedures Safely:</strong> If using stored procedures, ensure they are designed and implemented securely, meaning they also use parameterized inputs internally and do not concatenate user input directly.
-                </li>
-                <li>
-                    <strong>Escape User-Supplied Input (Legacy/Last Resort):</strong> Manually escaping special characters is an older method and is highly error-prone. It should only be used as a last resort in legacy systems where parameterization is not possible. Always prefer parameterized queries.
-                </li>
-                <li>
-                    <strong>Implement a Web Application Firewall (WAF):</strong> WAFs can detect and block common SQLi attack patterns at the network edge, providing an additional layer of defense, especially against known attack signatures.
-                </li>
-                <li>
-                    <strong>Perform Regular Security Audits & Testing:</strong> Periodically conduct security assessments, penetration tests, and code reviews to identify and remediate potential SQLi vulnerabilities before attackers can exploit them.
-                </li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h2>Final Advice: Stay Secure!</h2>
-            <p>
-                <strong>Always treat user input as untrusted, regardless of its source (even authenticated users or internal systems).</strong> Never assume input is safe.
-            </p>
-            <p>
-                Embrace modern development practices like parameterization and ORMs to build robust and secure applications from the ground up.
-            </p>
-            <p>
-                Regularly scan and test your applications for vulnerabilities and keep your frameworks and libraries updated to stay ahead of attackers.
-            </p>
-            <p>Security is an ongoing process, not a one-time fix. A proactive approach is key to defending against SQL Injection and other web vulnerabilities.</p>
+<span class="variable">$result</span> = <span class="keyword">mysqli_query</span>(<span class="variable">$conn</span>, <span class="variable">$sql</span>); <span class="comment">// Thực thi chuỗi đã ghép</span></code></pre>
+        <div class="php-note">
+            Trong quá khứ, các ứng dụng viết bằng ngôn ngữ như <strong>PHP</strong> rất dễ bị lỗ hổng này. Lý do chính là do thói quen phổ biến là nhúng trực tiếp dữ liệu người dùng vào chuỗi SQL bằng cách nối chuỗi, cùng với việc nhiều lập trình viên chưa nhận thức được tầm quan trọng của các câu lệnh được chuẩn bị trước (prepared statements) và xác thực dữ liệu đầu vào.
         </div>
     </div>
 
+    <div class="section">
+        <h2>Ví dụ Vượt Qua Đăng Nhập (Login Bypass)</h2>
+        <p>Một kiểu tấn công SQLi kinh điển thường nhắm vào các form đăng nhập.</p>
+
+        <h3>Dữ liệu giả định trong bảng `users`:</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>username</th>
+                    <th>password</th>
+                    <th>role</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="id">1</td>
+                    <td data-label="username">admin</td>
+                    <td data-label="password">supersecretpass</td>
+                    <td data-label="role">administrator</td>
+                </tr>
+                <tr>
+                    <td data-label="id">2</td>
+                    <td data-label="username">john.doe</td>
+                    <td data-label="password">password123</td>
+                    <td data-label="role">user</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Cấu trúc câu truy vấn dễ bị lỗi:</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">{{username_input}}</span>' <span class="keyword">AND</span> password = '<span class="variable">{{password_input}}</span>'</code></pre>
+
+        <p><strong>Dữ liệu nhập vào độc hại:</strong></p>
+        <ul>
+            <li>Tên đăng nhập (Username): <code>admin'--</code></li>
+            <li>Mật khẩu (Password): <code>(bất kỳ giá trị nào hoặc để trống)</code></li>
+        </ul>
+
+        <p><strong>Câu truy vấn thực tế được Database thực thi:</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> username = '<span class="variable">admin</span>'<span class="comment">--' AND password = 'anything'</span></code></pre>
+
+        <p><strong>Kết quả thực tế / Hành vi của ứng dụng:</strong></p>
+        <div class="output-box">
+            <strong>Kết quả:</strong>
+            <pre><code>id: 1
+username: admin
+password: supersecretpass
+role: administrator</code></pre>
+            <p><strong>Hành vi của ứng dụng:</strong> Kẻ tấn công đăng nhập thành công với tài khoản 'admin' mà không cần biết mật khẩu. Điều này xảy ra vì <code>--</code> đã biến phần còn lại của câu truy vấn thành chú thích, làm cho việc kiểm tra mật khẩu trở nên vô nghĩa.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Rút trích dữ liệu (Data Exfiltration) (dựa trên UNION SQLi)</h2>
+        <p>Kỹ thuật này sử dụng toán tử <code>UNION</code> để kết hợp kết quả từ hai hoặc nhiều câu lệnh <code>SELECT</code> thành một tập hợp kết quả duy nhất. Điều này cho phép kẻ tấn công lấy dữ liệu từ các bảng khác.</p>
+
+        <h3>Bảng dữ liệu giả định:</h3>
+        <h4>Bảng `products`:</h4>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>product_id</th>
+                    <th>product_name</th>
+                    <th>description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="product_id">1</td>
+                    <td data-label="product_name">Laptop X</td>
+                    <td data-label="description">Laptop hiệu năng cao</td>
+                </tr>
+                <tr>
+                    <td data-label="product_id">2</td>
+                    <td data-label="product_name">Smartphone Y</td>
+                    <td data-label="description">Thiết bị di động mới nhất</td>
+                </tr>
+            </tbody>
+        </table>
+        <h4>Bảng `users`:</h4>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>user_id</th>
+                    <th>username</th>
+                    <th>password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="user_id">1</td>
+                    <td data-label="username">alice</td>
+                    <td data-label="password">pass_alice</td>
+                </tr>
+                <tr>
+                    <td data-label="user_id">2</td>
+                    <td data-label="username">bob</td>
+                    <td data-label="password">pass_bob</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Cấu trúc câu truy vấn dễ bị lỗi (ví dụ: lấy chi tiết sản phẩm theo ID):</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
+
+        <p><strong>Dữ liệu nhập vào độc hại cho `product_id_input`:</strong></p>
+        <ul>
+            <li><code>-1 UNION SELECT username, password FROM users--</code></li>
+        </ul>
+        <p class="comment">(Sử dụng <code>-1</code> để đảm bảo không có sản phẩm hợp lệ nào được trả về, chỉ tập trung vào phần UNION. Lưu ý: Số lượng cột và kiểu dữ liệu của chúng phải khớp nhau. Ở đây, `username` khớp với `product_name` và `password` khớp với `description`.)</p>
+
+        <p><strong>Câu truy vấn thực tế được Database thực thi:</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name, description <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">-1</span> <span class="keyword">UNION</span> <span class="keyword">SELECT</span> username, password <span class="keyword">FROM</span> users<span class="comment">--</span></code></pre>
+
+        <p><strong>Kết quả thực tế / Hành vi của ứng dụng:</strong></p>
+        <div class="output-box">
+            <strong>Kết quả (hiển thị cho người dùng nếu ứng dụng chỉ in kết quả truy vấn):</strong>
+            <pre><code>product_name | description
+----------------------------
+alice        | pass_alice
+bob          | pass_bob</code></pre>
+            <p><strong>Hành vi của ứng dụng:</strong> Ứng dụng, thường hiển thị chi tiết sản phẩm, giờ đây lại hiển thị tên người dùng và mật khẩu từ bảng `users`. Đây là một lỗ hổng rò rỉ dữ liệu trực tiếp.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>SQLi Dựa trên Lỗi (Error-based SQLi)</h2>
+        <p>
+            Kỹ thuật này buộc database báo lỗi và lỗi đó chứa thông tin nhạy cảm, như phiên bản database, tên bảng, hoặc tên cột. Kẻ tấn công tạo ra các lỗi này bằng cách chèn các câu lệnh SQL sai cú pháp.
+        </p>
+
+        <h3>Bảng `products` giả định (giống như trên):</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>product_id</th>
+                    <th>product_name</th>
+                    <th>description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="product_id">1</td>
+                    <td data-label="product_name">Laptop X</td>
+                    <td data-label="description">Laptop hiệu năng cao</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Cấu trúc câu truy vấn dễ bị lỗi (ví dụ: lấy chi tiết sản phẩm theo ID):</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = <span class="variable">{{product_id_input}}</span></code></pre>
+
+        <p><strong>Dữ liệu nhập vào độc hại cho `product_id_input` (Ví dụ MySQL):</strong></p>
+        <ul>
+            <li><code>1 AND (SELECT 1 FROM (SELECT COUNT(*), CONCAT(VERSION(), FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.TABLES GROUP BY x)a)--</code></li>
+        </ul>
+        <p class="comment">(Payload này cố gắng tạo lỗi khóa trùng lặp bằng cách sử dụng `FLOOR(RAND(0)*2)` và ghép thông tin `VERSION()` vào để kích hoạt thông báo lỗi chứa dữ liệu nhạy cảm.)</p>
+
+        <p><strong>Câu truy vấn thực tế được Database thực thi:</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> product_name <span class="keyword">FROM</span> products <span class="keyword">WHERE</span> product_id = 1 <span class="keyword">AND</span> (<span class="keyword">SELECT</span> 1 <span class="keyword">FROM</span> (<span class="keyword">SELECT</span> <span class="keyword">COUNT</span>(*), <span class="keyword">CONCAT</span>(<span class="keyword">VERSION</span>(), <span class="keyword">FLOOR</span>(<span class="keyword">RAND</span>(0)*2))x <span class="keyword">FROM</span> <span class="keyword">INFORMATION_SCHEMA.TABLES</span> <span class="keyword">GROUP</span> <span class="keyword">BY</span> x)a)<span class="comment">--</span></code></pre>
+
+        <p><strong>Kết quả thực tế / Hành vi của ứng dụng:</strong></p>
+        <div class="output-box">
+            <strong>Kết quả (Thông báo lỗi Database hiển thị cho người dùng):</strong>
+            <pre><code>SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '5.7.23-log1' for key 'group_key'</code></pre>
+            <p><strong>Hành vi của ứng dụng:</strong> Ứng dụng, thay vì hiển thị chi tiết sản phẩm, lại hiển thị một thông báo lỗi database làm lộ phiên bản database (`5.7.23-log`). Kẻ tấn công có thể tạo ra các payload tương tự để rút trích các thông tin khác (ví dụ: tên bảng, tên cột).</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>SQL Injection Ẩn (Blind SQL Injection) (Dựa trên Boolean)</h2>
+        <p>
+            Khác với SQLi kiểu "in-band" (trả về dữ liệu trực tiếp), Blind SQLi không trả về dữ liệu trực tiếp. Thay vào đó, kẻ tấn công suy luận dữ liệu bằng cách quan sát những khác biệt nhỏ trong hành vi của ứng dụng (ví dụ: nội dung trang thay đổi, chuyển hướng) dựa trên các điều kiện đúng/sai được chèn vào câu truy vấn.
+        </p>
+
+        <h3>Dữ liệu giả định trong bảng `users` (giống như trên):</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>username</th>
+                    <th>password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="id">1</td>
+                    <td data-label="username">admin</td>
+                    <td data-label="password">secret123</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Cấu trúc câu truy vấn dễ bị lỗi (ví dụ: kiểm tra người dùng có tồn tại không):</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
+
+        <p><strong>Dữ liệu nhập vào độc hại cho `id_input` (Cố gắng đoán mật khẩu cho `id=1`):</strong></p>
+        <ul>
+            <li>Thử 1 (Đoán 's'): <code>1 AND SUBSTRING(password, 1, 1) = 's'--</code></li>
+            <li>Thử 2 (Đoán 'x'): <code>1 AND SUBSTRING(password, 1, 1) = 'x'--</code></li>
+        </ul>
+
+        <p><strong>Câu truy vấn thực tế được Database thực thi:</strong></p>
+        <pre><code class="language-sql">-- Thử 1
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 's'<span class="comment">--</span>
+
+-- Thử 2
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x'<span class="comment">--</span></code></pre>
+
+        <p><strong>Kết quả thực tế / Hành vi của ứng dụng:</strong></p>
+        <div class="output-box">
+            <strong>Hành vi của ứng dụng với Thử 1 (mật khẩu bắt đầu bằng 's'):</strong>
+            <p>Trang tải bình thường, có thể hiển thị thông báo "Tìm thấy người dùng" hoặc nội dung mặc định cho người dùng hiện có.</p>
+            <strong>Hành vi của ứng dụng với Thử 2 (mật khẩu KHÔNG bắt đầu bằng 'x'):</strong>
+            <p>Trang hiển thị thông báo "ID không hợp lệ" hoặc "Không tìm thấy người dùng", hoặc có thể là một trang trống/chuyển hướng đến trang lỗi.</p>
+            <p><strong>Giải thích:</strong> Bằng cách quan sát những hành vi khác nhau này, kẻ tấn công có thể xác nhận rằng ký tự đầu tiên của mật khẩu là 's'. Họ lặp lại quá trình này cho từng ký tự và vị trí để xây dựng lại toàn bộ mật khẩu.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>SQL Injection Ẩn (Blind SQL Injection) (Dựa trên Thời gian)</h2>
+        <p>
+            Đây là một dạng nâng cao của Blind SQLi, được dùng khi không có lỗi hoặc sự khác biệt nội dung nào khác có thể quan sát được. Kẻ tấn công suy luận dữ liệu bằng cách gây ra một độ trễ thời gian có thể đo lường được trong phản hồi của database nếu một điều kiện cụ thể là đúng.
+        </p>
+
+        <h3>Dữ liệu giả định trong bảng `users` (giống như trên):</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>username</th>
+                    <th>password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td data-label="id">1</td>
+                    <td data-label="username">admin</td>
+                    <td data-label="password">secret123</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Cấu trúc câu truy vấn dễ bị lỗi (ví dụ: kiểm tra người dùng có tồn tại không):</strong></p>
+        <pre><code class="language-sql"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = <span class="variable">{{id_input}}</span></code></pre>
+
+        <p><strong>Dữ liệu nhập vào độc hại cho `id_input` (Cố gắng đoán mật khẩu cho `id=1`):</strong></p>
+        <ul>
+            <li>Thử 1 (Đoán 's'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 's', SLEEP(5), 0)--</code></li>
+            <li>Thử 2 (Đoán 'x'): <code>1 AND IF(SUBSTRING(password, 1, 1) = 'x', SLEEP(5), 0)--</code></li>
+        </ul>
+
+        <p><strong>Câu truy vấn thực tế được Database thực thi:</strong></p>
+        <pre><code class="language-sql">-- Thử 1
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 's', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span>
+
+-- Thử 2
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id = 1 <span class="keyword">AND</span> <span class="keyword">IF</span>(<span class="keyword">SUBSTRING</span>(password, 1, 1) = 'x', <span class="keyword">SLEEP</span>(5), 0)<span class="comment">--</span></code></pre>
+
+        <p><strong>Kết quả thực tế / Hành vi của ứng dụng:</strong></p>
+        <div class="output-box">
+            <strong>Hành vi của ứng dụng với Thử 1 (mật khẩu bắt đầu bằng 's'):</strong>
+            <p>Trang web phản hồi chậm hơn khoảng 5 giây so với bình thường.</p>
+            <strong>Hành vi của ứng dụng với Thử 2 (mật khẩu KHÔNG bắt đầu bằng 'x'):</strong>
+            <p>Trang web phản hồi ngay lập tức (hoặc chỉ chậm một chút).</p>
+            <p><strong>Giải thích:</strong> Kẻ tấn công có thể đo chính xác thời gian phản hồi. Độ trễ 5 giây cho thấy điều kiện là đúng. Điều này xác nhận 's' là ký tự đầu tiên. Quá trình này được lặp lại để trích xuất toàn bộ mật khẩu và các dữ liệu nhạy cảm khác, mặc dù chậm.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Bài tập: Sửa lỗi Tìm kiếm Sản phẩm</h2>
+        <p>Giá trị `search_term` được nối trực tiếp vào câu truy vấn, làm cho nó dễ bị SQL Injection. Bạn sẽ sửa đổi đoạn mã Python này như thế nào để nó an toàn?</p>
+        <pre><code><span class="comment"># Đoạn mã Python dễ bị lỗi</span>
+<span class="variable">search_term</span> = <span class="string">"user_input"</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE '%"</span> + <span class="variable">search_term</span> + <span class="string">"%'"</span>
+
+<span class="comment"># Đã sửa (Ví dụ API Python DB sử dụng tham số hóa truy vấn):</span>
+<span class="variable">param_value</span> = <span class="string">'%'</span> + <span class="variable">search_term</span> + <span class="string">'%'</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM products WHERE product_name LIKE ?"</span>
+<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">param_value</span>,))</code></pre>
+        <p><strong>Giải pháp:</strong> Mã đã sửa sử dụng truy vấn tham số hóa (parameterized query). Điều này tách biệt mã SQL khỏi dữ liệu do người dùng cung cấp, đảm bảo database coi `param_value` là một chuỗi văn bản thông thường, chứ không phải mã có thể thực thi. Đây là biện pháp phòng thủ chính và hiệu quả nhất chống lại SQL Injection.</p>
+    </div>
+
+    <div class="section">
+        <h2>Bài tập: Sửa lỗi Truy vấn ID Số nguyên</h2>
+        <p>Ngay cả các trường nhập liệu dạng số nguyên cũng có thể bị khai thác nếu không được xử lý đúng cách. `article_id` được sử dụng trực tiếp ở đây. Làm thế nào bạn có thể ngăn chặn SQL Injection?</p>
+        <pre><code><span class="comment"># Đoạn mã Python dễ bị lỗi</span>
+<span class="variable">article_id</span> = <span class="string">"user_input"</span> <span class="comment">// Có thể là "1 OR 1=1"</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = "</span> + <span class="variable">article_id</span>
+
+<span class="comment"># Đã sửa (Ví dụ API Python DB sử dụng tham số hóa truy vấn):</span>
+<span class="variable">query</span> = <span class="string">"SELECT * FROM articles WHERE id = ?"</span>
+<span class="variable">cursor</span>.<span class="keyword">execute</span>(<span class="variable">query</span>, (<span class="variable">article_id</span>,))</code></pre>
+        <p><strong>Giải pháp:</strong> Bằng cách sử dụng truy vấn tham số hóa, driver database đảm bảo rằng `article_id` được coi là một giá trị số nguyên duy nhất, ngăn chặn bất kỳ SQL nào bị chèn vào không được thực thi. Việc xác thực dữ liệu đầu vào (ví dụ: ép kiểu sang `int`) để đảm bảo `article_id` thực sự là một số nguyên trước khi truyền nó vào truy vấn cũng là một lớp bảo vệ quan trọng, nhưng tham số hóa là biện pháp bảo vệ cuối cùng chống lại injection.</p>
+    </div>
+
+    <div class="section">
+        <h2>Bài tập Tương tác: Vượt Qua Đăng Nhập</h2>
+        <div class="exercise-container">
+            <h3>Thử mô phỏng đăng nhập</h3>
+            <p>
+                Hãy thử đăng nhập với tư cách 'admin' mà không cần biết mật khẩu. Nhập 'Tên đăng nhập' và 'Mật khẩu' của bạn (hoặc chỉ một tên đăng nhập độc hại).
+                Đây chỉ là mô phỏng phía client và không tương tác với hệ thống backend thật.
+            </p>
+            <label for="ex_username">Tên đăng nhập:</label>
+            <input
+                type="text"
+                id="ex_username"
+                placeholder="ví dụ: admin"
+                autocomplete="off"
+            />
+            <label for="ex_password">Mật khẩu:</label>
+            <input
+                type="text"
+                id="ex_password"
+                placeholder="ví dụ: password (tùy chọn cho bypass)"
+                autocomplete="off"
+            />
+            <button onclick="simulateLogin()">Mô phỏng Đăng nhập</button>
+            <div id="loginResult" class="solution-box"></div>
+            <button
+                style="margin-top: 10px; background-color: #2ecc71"
+                onclick="showLoginSolution()"
+            >
+                Hiển thị Giải pháp
+            </button>
+            <div id="loginSolution" class="solution-box">
+                <h4>Các Giải pháp Vượt qua Phổ biến:</h4>
+                <ul>
+                    <li>
+                        <strong>Tên đăng nhập:</strong> <code>admin'--</code>
+                        <span class="comment">(Biến phần còn lại của câu truy vấn thành chú thích)</span>
+                    </li>
+                    <li>
+                        <strong>Tên đăng nhập:</strong> <code>admin' OR '1'='1</code>
+                        <span class="comment">(Điều kiện luôn đúng)</span>
+                    </li>
+                    <li>
+                        <strong>Tên đăng nhập:</strong> <code>' OR '1'='1--</code>
+                        <span class="comment">(Vượt qua cả tên đăng nhập và mật khẩu)</span>
+                    </li>
+                </ul>
+                <p>
+                    Các dữ liệu nhập vào này sẽ thao túng câu lệnh SQL để nó trả về
+                    kết quả đúng, vượt qua logic xác thực ban đầu.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Các Biện pháp Tốt Nhất: Lá chắn chống SQLi của bạn</h2>
+        <ul>
+            <li>
+                <strong>Sử dụng Truy vấn Tham số hóa / Câu lệnh Chuẩn bị sẵn (Prepared Statements):</strong> Đây là tiêu chuẩn vàng. Chúng tách mã SQL khỏi dữ liệu người dùng, đảm bảo dữ liệu nhập vào được xử lý như các giá trị thông thường, không phải là lệnh có thể thực thi.
+            </li>
+            <li>
+                <strong>Xác thực Kiểu và Định dạng Dữ liệu Đầu vào:</strong> Thực hiện danh sách cho phép (allow-lists hay whitelisting) nghiêm ngặt cho tất cả các dữ liệu đầu vào. Từ chối bất kỳ thứ gì không phù hợp với các định dạng mong đợi (ví dụ: chỉ số cho ID, chỉ các ký tự cụ thể cho tên).
+            </li>
+            <li>
+                <strong>Sử dụng ORM (Object-Relational Mappers):</strong> Các framework như SQLAlchemy (Python), Hibernate (Java), và Entity Framework (.NET) cung cấp một lớp trừu tượng hóa trên SQL thô, thường tích hợp truy vấn tham số hóa theo mặc định, giảm nguy cơ lỗi do con người.
+            </li>
+            <li>
+                <strong>Tuân thủ Nguyên tắc Quyền Hạn Tối Thiểu (Principle of Least Privilege):</strong> Chỉ cấp cho người dùng database các quyền tối thiểu cần thiết cho nhiệm vụ cụ thể của họ. Ví dụ, người dùng ứng dụng web có thể chỉ cần quyền đọc đối với một số bảng nhất định, không cần quyền DDL (Ngôn ngữ Định nghĩa Dữ liệu) hoặc DML (Ngôn ngữ Thao tác Dữ liệu) trên các bảng nhạy cảm.
+            </li>
+            <li>
+                <strong>Sử dụng Stored Procedure một cách An toàn:</strong> Nếu sử dụng stored procedure, hãy đảm bảo chúng được thiết kế và triển khai an toàn, tức là chúng cũng sử dụng tham số hóa đầu vào bên trong và không nối trực tiếp dữ liệu người dùng.
+            </li>
+            <li>
+                <strong>Thoát Dữ liệu Đầu vào của Người dùng (Cách cũ / Giải pháp cuối cùng):</strong> Tự thoát các ký tự đặc biệt là một phương pháp cũ và rất dễ gây lỗi. Chỉ nên sử dụng nó như một giải pháp cuối cùng trong các hệ thống cũ mà không thể tham số hóa. Luôn ưu tiên các truy vấn tham số hóa.
+            </li>
+            <li>
+                <strong>Triển khai Tường lửa Ứng dụng Web (WAF):</strong> WAF có thể phát hiện và chặn các kiểu tấn công SQLi phổ biến ở rìa mạng, cung cấp thêm một lớp phòng thủ, đặc biệt chống lại các chữ ký tấn công đã biết.
+            </li>
+            <li>
+                <strong>Thực hiện Kiểm tra và Đánh giá An ninh Định kỳ:</strong> Định kỳ thực hiện đánh giá bảo mật, kiểm thử xâm nhập (penetration test) và xem xét mã để xác định và khắc phục các lỗ hổng SQLi tiềm ẩn trước khi kẻ tấn công có thể khai thác chúng.
+            </li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Lời khuyên cuối cùng: Luôn An toàn!</h2>
+        <p>
+            <strong>Luôn coi dữ liệu người dùng là không đáng tin cậy, bất kể nguồn gốc của nó (ngay cả người dùng đã xác thực hoặc hệ thống nội bộ).</strong> Đừng bao giờ cho rằng dữ liệu đầu vào là an toàn.
+        </p>
+        <p>
+            Áp dụng các phương pháp phát triển hiện đại như tham số hóa và ORM để xây dựng các ứng dụng mạnh mẽ và an toàn ngay từ đầu.
+        </p>
+        <p>
+            Thường xuyên quét và kiểm tra ứng dụng của bạn để tìm lỗ hổng và luôn cập nhật các framework và thư viện của bạn để đi trước kẻ tấn công.
+        </p>
+        <p>Bảo mật là một quá trình liên tục, không phải là một giải pháp một lần. Cách tiếp cận chủ động là chìa khóa để chống lại SQL Injection và các lỗ hổng web khác.</p>
+    </div>
+</div>
     <script>
         function simulateLogin() {
             const usernameInput = document.getElementById('ex_username').value;
